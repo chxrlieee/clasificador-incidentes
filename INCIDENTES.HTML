@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Clasificador de Incidentes Médicos</title>
+</head>
+<body>
+<center>
+<h2>Clasificador de Incidentes Médicos</h2>
+<input type="text" id="busqueda" placeholder="Escribe los síntomas..." style="width:400px;">
+<button onclick="buscar()">Buscar</button>
+<pre id="resultado" style="margin-top:20px; background:#f0f0f0; padding:10px;"></pre>
+
+<script>
+const incidentes = [
+    { primario:"ACCIDENTES DE OTROS", secundarios:{
+        "TIPOS DE TRANSPORTE":["avión","helicóptero","barco","lancha","bote","transporte acuático","transporte aéreo","viaje transporte"]
+    }},
+    { primario:"ACCIDENTE DE TRANSITO", secundarios:{
+        "Atropellado":["atropello","atropellado","golpe vehículo","persona atropellada"],
+        "Caida sin colisión de motociclista o ciclista":["caída bicicleta","caída moto","motociclista cayó","ciclista cayó"],
+        "Choque de gran violencia":["choque fuerte","colisión violenta","impacto grave","accidente severo"],
+        "Colisión de motocicletas":["choque motos","motocicletas colisión","colisión motocicleta"],
+        "Colisión de vehículos":["choque vehículos","colisión coche","impacto vehículo"],
+        "Colisión de motocicleta con vehiculo":["choque moto vehículo","motocicleta colisionó coche"],
+        "Volcadura":["volcadura coche","vehículo volcado","auto volcado"],
+        "Colision de vehiculo de carga":["choque camión","colisión camión","accidente camión"],
+        "Colision/Choque de transporte publico":["choque bus","colisión transporte público","accidente colectivo"],
+        "Caida de vehiculo en movimiento":["vehículo cayó","vehículo se volcó","auto cayó"]
+    }},
+    { primario:"ACCIDENTE POR INMERSION", secundarios:{
+        "Ahogamiento (asfixia) por inmersion agua salada":["ahogado mar","ahogamiento agua salada","problema respiratorio agua mar"],
+        "Ahogamiento (asfixia) por inmersion agua dulce":["ahogado río","ahogamiento agua dulce","asfixia lago"]
+    }},
+    { primario:"AGRESION(VIOLENCIA)SEXUAL", secundarios:{
+        "Agresion sexual":["abuso sexual","violación","acoso sexual","agresión sexual"],
+        "Agresión física y Psicologica":["golpe","maltrato","intimidación","violencia física","violencia psicológica"]
+    }},
+    { primario:"ALTERACIONES NEUROLOGICAS", secundarios:{
+        "Inconsciente con vida":["desmayo","inconsciente","perdida conciencia","síncope repentino"],
+        "Accidente Cerebrovascular (Derrame)":["ictus","derrame cerebral","ACV","stroke","accidente cerebrovascular"],
+        "Síncope":["desmayo","síncope","mareo intenso"],
+        "Mareos o Lipotimia":["mareo","atontamiento","sensación de desmayo","náusea mareo"],
+        "Vertigo":["vértigo","mareo giratorio","desequilibrio","mareo de movimiento"],
+        "cefaleas":["dolor cabeza","jaqueca","migraña","cefalea intensa"],
+        "Parálisis cerebral Infantil":["parálisis infantil","problema motriz niño","dificultad moverse niño"],
+        "Abstinencia a sustancias psicoactivas":["abstinencia drogas","síntomas retirada","mono drogas"],
+        "Incoherencia/cuadro confusional":["confusión","desorientación","habla incoherente","delirio leve"],
+        "Sospecha Menigitis":["meningitis sospecha","rigidez cuello","fiebre cuello","dolor cabeza cuello"]
+    }},
+    { primario:"CAIDA", secundarios:{
+        "Caida de su propia altura":["caída piso","resbalón","tropezón","caer mismo nivel"],
+        "Caida de altura menor de 6 metros":["caída baja altura","caer escalera baja","accidente altura baja"],
+        "Caida de altura mayor de 6 metros":["caída altura alta","caer edificio","accidente altura alta"],
+        "Caida de altura mayor de 3 mt en NIÑOS":["caída niños","niño cayó altura","accidente infantil altura"]
+    }},
+    { primario:"CONVULSIONES", secundarios:{
+        "Crisis Febriles":["convulsión fiebre","niño convulsiona","crisis febril"],
+        "Estatus convulsivo":["convulsión prolongada","ataque epiléptico continuo"],
+        "Convulsion no especificada":["convulsión","temblores involuntarios","sacudidas cuerpo"],
+        "Estatus epileptico":["convulsión grave","ataque epiléptico prolongado","emergencia epilepsia"]
+    }},
+    { primario:"DESHIDRATACION, DIARREA Y VÓMITOS (GI)", secundarios:{
+        "Desequilibrio Hidroelectrolítico":["deshidratación","mareo por líquidos","problema electrolitos"],
+        "Nauseas y vómitos":["náusea","vómito","malestar estómago","gastroenteritis leve"],
+        "Diarrea/Gastroenteritis aguda":["diarrea","heces líquidas","malestar digestivo"],
+        "Golpe de Calor":["hipertermia","agotamiento calor","síncope calor","desmayo calor"]
+    }},
+    { primario:"DIABETES EN CRISIS", secundarios:{
+        "Diabetes descompensada":["azúcar alta","diabetes fuera control","glucosa elevada"],
+        "Hipoglicemia":["baja azúcar","glucosa baja","mareo azúcar"],
+        "Hiperglicemia":["azúcar alta","glucosa alta","mareo hiperglicemia"],
+        "PIE DIABETICO":["infección pie diabético","ulcera pie","llaga pie"]
+    }},
+    { primario:"DOLOR ABDOMINAL", secundarios:{
+        "Dolor abdominal inespecifico":["dolor vientre","malestar estómago","dolor general abdomen"],
+        "cuadro apendicular":["apendicitis","dolor abdomen inferior derecho","inflamación apéndice"],
+        "Cuadro biliar":["cálculos biliares","dolor hipocondrio derecho","malestar vesícula"],
+        "Hernias":["hernia dolor","bulto abdomen","protrusión abdominal"],
+        "Obstrucciones intestinales":["estreñimiento severo","dolor intestinos","vómitos obstrucción"],
+        "Gastropatias/acido pepticas":["úlcera estómago","acidez intensa","dolor epigástrico"],
+        "Dolor por falla de dispositivo medico":["dolor catéter","molestia prótesis","problema implante"]
+    }},
+    { primario:"DOLOR NO TRAUMATICO E INFECCIONES", secundarios:{
+        "Antecedente o Dolor Oncológicos":["dolor cáncer","dolor tumor","tratamiento oncológico dolor"],
+        "Dolor cervical":["dolor cuello","rigidez cervical","tensión cuello"],
+        "Dolor de espalda/Columna":["dolor espalda","lumbalgia","problema columna"],
+        "Dolor de extremidades/articular":["dolor brazos piernas","dolor articulaciones","inflamación articulación"],
+        "Dolor hemorroidal":["dolor hemorroides","inflamación ano","molestia rectal"],
+        "Dolor facial/ ORL/odontalgia":["dolor cara","dolor dientes","dolor oído"],
+        "Dolor generalizado/ Mal definido":["dolor general","molestia general","malestar inespecífico"],
+        "Ulcera por decubito":["llaga cama","úlceras presión","escara"],
+        "Infecciones de Sitios Operatorios":["infección postoperatoria","herida quirúrgica infectada"],
+        "Gangrena":["gangrena","necrosis","tejido muerto"],
+        "Sospecha Trombosis venosa":["trombosis","coágulo","dolor pierna"],
+        "Celulitis/abscesos":["celulitis","absceso","infección piel"]
+    }},
+    { primario:"EMERGENCIA OBSTETRICA (Embarazo)", secundarios:{
+        "Amenaza de Aborto":["sangrado embarazo","amenaza aborto","contracciones tempranas"],
+        "Aborto":["pérdida embarazo","expulsión feto","aborto espontáneo"],
+        "Hemorragia del tercer trimestre":["sangrado avanzado embarazo","hemorragia embarazo","tercer trimestre"],
+        "Eclampsia":["presión alta embarazo","convulsión embarazo","toxemia"],
+        "Puerperio morbido":["complicación postparto","infección postparto","problema puerperio"],
+        "Preclamsia":["hipertensión embarazo","edema embarazo","proteína orina"],
+        "Parto Extrahospitalario":["parto fuera hospital","parto casa","nacimiento inesperado"],
+        "Trabajo de Parto":["contracciones fuertes","inicio parto","dolor parto"],
+        "Amenaza Parto prematuro":["contracciones tempranas","parto antes tiempo","riesgo parto prematuro"],
+        "Infeccion de vias urinarias":["infección orina embarazo","uretritis embarazada","cistitis embarazo"],
+        "Diabetes Gestacional":["azúcar alta embarazo","glucosa elevada embarazo"],
+        "EPIGASTRALGIAS":["dolor parte superior abdomen","molestia epigástrica"],
+        "Hiperémesis Gravídica":["vómitos intensos embarazo","náuseas graves embarazo"],
+        "Embarazo Ectópico":["embarazo fuera útero","dolor abdominal embarazo","sangrado anormal embarazo"]
+    }},
+    { primario:"EMERGENCIA GINECOLOGICAS", secundarios:{
+        "Infecciones vaginales":["vaginitis","flujo vaginal","infección vagina"],
+        "Hemorragia uterina anormal":["sangrado abundante","hemorragia útero","menorragia"],
+        "Dolor génitourinario/Pélvico":["dolor pelvis","malestar genital","dolor urinario"],
+        "Tumor/ Cancer":["masa pélvica","cáncer ginecológico","tumor"]
+    }},
+    { primario:"ENFERMEDADES FEBRILES", secundarios:{
+        "Sospecha Dengue sin Signos de Alarma":["fiebre dengue","dengue leve","fiebre repentina"],
+        "Sospecha Dengue con Signos de Alarma":["dengue con alarma","dolor intenso dengue","fiebre alta dengue"],
+        "Sospecha Dengue Grave":["dengue grave","sangrado dengue","complicación dengue"],
+        "Chikungunya":["chikungunya","fiebre chikungunya","dolor articular chikungunya"],
+        "Zika":["zika","erupción zika","fiebre zika"],
+        "Proceso febril por determinar":["fiebre","malestar general","fiebre desconocida"]
+    }},
+    { primario:"Estress Termico", secundarios:{
+        "Exposicion al frio":["hipotermia","frío extremo","congelación"],
+        "Exposicion al calor":["golpe calor","hipertermia","agotamiento calor"]
+    }},
+    { primario:"EVENTO PROGRAMADO", secundarios:{
+        "EVENTO NACIONAL":["evento público","fiesta nacional","manifestación"],
+        "EVENTO PRIVADO":["evento privado","reunión","fiesta privada"]
+    }},
+    { primario:"HERIDAS", secundarios:{
+        "Herida por arma blanca":["cuchillo","corte arma","puñalada"],
+        "Herida por arma de fuego":["disparo","herida bala","pistola","arma fuego"],
+        "Heridas por otras formas u objetos":["golpe objeto","corte accidental","lesión externa"],
+        "Amputaciones traumaticas":["amputación","perdida extremidad","trauma amputación"]
+    }},
+    { primario:"INTOXICACIONES", secundarios:{
+        "Pesticidas/insecticidas":["envenenamiento pesticida","toxina insecticida","exposición química"],
+        "Gases Toxicos":["inhalación gas tóxico","gas venenoso","exposición química"],
+        "Plantas Venenosas":["intoxicación planta","consumo planta tóxica","planta venenosa"],
+        "Inhalaciones de monóxido carbono":["intoxicación CO","gas monóxido carbono","exposición CO"],
+        "Intoxicaciones alimentarias":["comida en mal estado","intoxicación comida","salmonella"],
+        "Intoxicación medicamentosa":["sobredosis","medicamento en exceso","reacción fármaco"]
+    }},
+    { primario:"MORDEDURAS Y PICADURAS", secundarios:{
+        "Mordeduras/picaduras":["mordedura animal","picadura insecto","herida mordedura"],
+        "Picaduras por abejas/ enjambres":["abeja","avispas","picadura múltiple"],
+        "Mordedura por animal trasnmisor de rabia":["perro rabioso","mordedura rabia","animal infectado"],
+        "Mordedura por ofidio":["mordedura serpiente","víbora","ofidio venenoso"]
+    }},
+    { primario:"OBSTRUCCION DE LA VIA AEREA", secundarios:{
+        "Atrangantamiento por cuerpo extraño":["atragantamiento","asfixia comida","cuerpo extraño garganta"]
+    }},
+    { primario:"PARO CARDIORESPIRATORIO", secundarios:{
+        "PARO CARDIORESPIRATORIO":["paro cardíaco","detención corazón","falta latido"]
+    }},
+    { primario:"PROBLEMA DE LA PRESION ARTERIAL", secundarios:{
+        "crisis Hipertensiva":["presión alta","hipertensión","tensión elevada"],
+        "Hipotensiones":["presión baja","mareo presión baja","baja tensión"]
+    }},
+    { primario:"PROBLEMA RESPIRATORIA", secundarios:{
+        "Sospecha de neumonia":["neumonía","fiebre pulmonar","tos intensa"],
+        "crisis asmatica":["asma","dificultad respirar","sibilancias"],
+        "infeccion vias aereas superiores (IRAS)":["resfriado grave","infección vías respiratorias","tos"],
+        "EPOC":["EPOC","enfermedad pulmonar crónica","dificultad respirar crónica"],
+        "Cuerpo extraño en via aerea":["atragantamiento","obstrucción respiratoria","cuerpo extraño"],
+        "Insuficiencia respiratoria":["respiración insuficiente","dificultad oxígeno","hipoxia"]
+    }},
+    { primario:"PROBLEMAS CARDIACOS", secundarios:{
+        "Palipitaciones/Arritmias":["palpitaciones","latido irregular","taquicardia"],
+        "Insuficiencia cardiaca":["falla cardíaca","edema pulmonar","dificultad respirar corazón"],
+        "Dolor precordial":["dolor pecho","angina","molestia precordial"],
+        "Infarto Agudo de Miocardio":["infarto","ataque cardíaco","obstrucción coronaria"]
+    }},
+    { primario:"PROBLEMAS DE SALUD MENTAL", secundarios:{
+        "Incoherencia/cuadro confusional":["confusión mental","desorientación","habla incoherente"],
+        "Intento suicida/ Ideación Suicida":["suicidio","ideación suicida","autoagresión"],
+        "Trastorno de Ansiedad":["ansiedad","nerviosismo","ataque pánico"],
+        "Psicosis":["psicosis","alucinación","delirio"],
+        "Depresion":["depresión","tristeza profunda","apatía"],
+        "Transtorno Bipolar":["bipolar","cambios ánimo","manía depresión"]
+    }},
+    { primario:"PROBLEMAS URINARIOS Y RENALES", secundarios:{
+        "Retencion urinaria":["dificultad orinar","no orinar","retención orina"],
+        "Insuficiencia renal aguda y cronica":["problema riñón","fallo renal","insuficiencia renal"],
+        "Colico Renal":["cólico riñón","dolor riñón","cálculo renal"],
+        "Infeccion de vias urinarias":["infección orina","cistitis","uretritis"],
+        "Pielonefritis":["infección riñón","pielonefritis","dolor lumbar infección"],
+        "Insuficiencia Renal":["fallo riñón","insuficiencia renal","diálisis necesaria"],
+        "Hematuria":["sangre orina","orina roja","hematuria"]
+    }},
+    { primario:"QUEMADURAS", secundarios:{
+        "Por Liquidos calientes":["quemadura agua caliente","escaldadura","líquido hirviendo"],
+        "Electricas":["quemadura eléctrica","corriente eléctrica","electrocución"],
+        "Por Flama":["quemadura fuego","llama","incendio quemadura"],
+        "Exposicion a superficies calientes/ fuego":["quemadura superficie caliente","fuego","contacto calor"],
+        "Exposicion al frio":["congelación","frío extremo","hipotermia"]
+    }},
+    { primario:"REACCION ALERGICA", secundarios:{
+        "Alimenticias":["alergia comida","alimento reacción","anafilaxia comida"],
+        "Anafilaxia":["anafilaxia","shock anafiláctico","reacción severa"],
+        "Picaduras por insectos":["alergia picadura","insecto","abeja avispa"],
+        "Reacciones adversas Medicamentos":["alergia medicamento","reacción fármaco","efecto secundario"],
+        "Tóxicos, drogas, medicamentos y/o alcohol":["intoxicación química","drogas reacción","alcohol reacción"],
+        "Reaccion Adversa a Vacuna":["vacuna reacción","efecto secundario vacuna"]
+    }},
+    { primario:"SANGRADO NO TRAUMATICO", secundarios:{
+        "HEMORRAGIAS DE TUBO DIGESTIVO SUPERIOR":["sangrado digestivo","hematemesis","vomito sangre"],
+        "HEMORRAGIAS DE TUBO DISGESTIVO INFERIOR":["sangrado rectal","hematochezia","sangre heces"],
+        "EPISTAXIS":["sangrado nariz","hemorragia nasal","epistaxis"]
+    }},
+    { primario:"TRAUMATISMO", secundarios:{
+        "Explosion por pirotecnicos":["explosión pirotecnia","fuegos artificiales","accidente pirotecnia"],
+        "Aplastamiento":["aplastamiento","presión pesada","lesión aplastamiento"],
+        "Estrangulamiento":["estrangulación","ahorcamiento","asfixia"],
+        "Contusion":["contusión","golpe","hematoma"],
+        "Explosion por gas propano":["explosión gas","gas propano","accidente gas"],
+        "soterrados":["atrapado escombros","soterrado","derrumbado"]
+    }},
+    { primario:"Urgencia ambiental", secundarios:{
+        "Inundaciones":["agua inundación","lluvias fuertes","desbordamiento río"],
+        "Incendio Forestal":["incendio bosque","fuego forestal","quemar bosque"],
+        "Incendio de Vehiculo":["vehículo fuego","auto incendio","explosión coche"],
+        "Incendio de Edificacion (casas,etc)":["edificio fuego","incendio casa","fuego inmueble"],
+        "Derrumbes por lluvias":["deslizamiento tierra","derrumbe","accidente lluvia"],
+        "Disturbios o desordenes publicos":["protesta violenta","disturbios","desorden público"]
+    }},
+    { primario:"Violencia", secundarios:{
+        "Autoinflingida":["autoagresión","suicidio","herida propia"],
+        "Violencia intrafamiliar":["maltrato familiar","violencia hogar","abuso familiar"],
+        "Violencia Psicologica":["maltrato psicológico","intimidación","acoso mental"]
+    }}
+];
+
+function normalizar(texto) {
+    return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+function buscar() {
+    const query = normalizar(document.getElementById("busqueda").value);
+    let encontrado = false;
+    let resultado = "";
+
+    for (let inc of incidentes) {
+        for (let sec in inc.secundarios) {
+            for (let palabra of inc.secundarios[sec]) {
+                if (normalizar(palabra).length > 0 && query.includes(normalizar(palabra))) {
+                    resultado = `INCIDENTE PRIMARIO: ${inc.primario}\nINCIDENTE SECUNDARIO: ${sec}`;
+                    encontrado = true;
+                    break;
+                }
+            }
+            if(encontrado) break;
+        }
+        if(encontrado) break;
+    }
+
+    if (!encontrado) {
+        resultado = "No se pudo identificar el tipo de incidente con la descripción proporcionada.";
+    }
+
+    document.getElementById("resultado").innerText = resultado;
+}
+
+document.getElementById("busqueda").addEventListener("keypress", function(e){
+    if(e.key === "Enter") buscar();
+});
+<center>
+</script>
+</body>
+</html>
